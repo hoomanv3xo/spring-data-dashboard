@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Data Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f4f6f8;
+            display: flex; justify-content: center; padding: 30px; }
+        .wrap { width: 760px; }
+        .card { background: white; padding: 20px 24px; border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08); margin-bottom: 20px; }
+        input, button { padding: 9px 12px; font-size: 15px; border-radius: 8px;
+            border: 1px solid #ccc; }
+        button, a.btn { background: #4facfe; color: white; border: none; cursor: pointer;
+            padding: 9px 12px; font-size: 15px; border-radius: 8px;
+            text-decoration: none; display: inline-block; }
+        button.danger { background: #e35d5d; }
+        table { width: 100%; border-collapse: collapse; }
+        td { padding: 8px 4px; border-bottom: 1px solid #eee; }
+        td:last-child { text-align: right; font-weight: bold; }
+        .upload-area { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+        .hint { color: #777; font-size: 13px; margin-top: 8px; }
+        #fileName { color: #666; font-size: 14px; margin-top: 8px; }
+        #uploadStatus { margin-top: 8px; font-size: 14px; }
+        .info { color: #444; font-size: 14px; margin-top: 10px; }
+    </style>
+</head>
+<body>
+<div class="wrap">
+
+    <div class="card">
+        <h2>Upload CSV File</h2>
+        <div class="upload-area">
+            <input id="csvFile" type="file" accept=".csv">
+            <button onclick="uploadCSV()">Upload CSV</button>
+        </div>
+        <div class="hint">Columns: label,amount[,amount2]. A header row is optional, and amount2 is only needed for the scatter plot.</div>
+        <div id="fileName"></div>
+        <div id="uploadStatus"></div>
+    </div>
+
+    <div class="card">
+        <h2>Add a data point</h2>
+        <input id="label" type="text" placeholder="Label (e.g. Jul)">
+        <input id="amount" type="number" step="any" placeholder="Value">
+        <input id="amount2" type="number" step="any" placeholder="Second value (optional)">
+        <button onclick="addSale()">Add</button>
+        <button class="danger" onclick="clearAll()">Clear all data</button>
+    </div>
+
+    <div class="card">
+        <h2>Chart</h2>
+        <canvas id="chart"></canvas>
+    </div>
+
+    <div class="card">
+        <h2>Histogram</h2>
+        Bins: <input id="bins" type="number" min="1" max="50" placeholder="auto"
+                     style="width:80px" onchange="refresh()">
+        <canvas id="hist"></canvas>
+    </div>
+
+    <div class="card">
+        <h2>Box plot</h2>
+        <svg id="box" viewBox="0 0 700 130" style="width:100%"></svg>
+        <div class="info" id="boxInfo"></div>
+    </div>
+
+    <div class="card">
+        <h2>Scatter plot (value vs second value)</h2>
+        <canvas id="scatter"></canvas>
+        <div class="info" id="scatterInfo"></div>
+    </div>
+
+    <div class="card">
+        <h2>Descriptive statistics</h2>
+        <table id="stats"></table>
+    </div>
+
+    <div class="card">
+        <h2>Export</h2>
+        <a class="btn" href="/api/export">Download data (CSV)</a>
+        <button onclick="downloadStats()">Download statistics (CSV)</button>
+    </div>
+
+</div>
+
+<script>
+    let chart, histChart, scatterChart;
+
+    async function refresh() {
+        const bins = document.getElementById("bins").value;
+        const [data, stats, hist, analysis, box, scatter] = await Promise.all([
+            fetch("/api/sales").then(r => r.json()),
+            fetch("/api/stats").then(r => r.json()),
+            fetch("/api/histogram" + (bins ? "?bins=" + bins : "")).then(r => r.json()),
+            fetch("/api/analysis").then(r => r.json()),
+            fetch("/api/boxplot").then(r => r.json()),
+            fetch("/api/scatter").then(r => r.json())
+        ]);
+        drawChart(data);
+        drawHist(hist);
+        drawBox(box);
+        drawScatter(scatter);
+        showStats(stats, analysis);
+    }
+
+    function fmt(v) {
+        if (v === null || v === undefined) return "n/a";
+        return Number.isInteger(v) ? v : v.toFixed(3);
+    }
+
+    function drawChart(data) {
+        if (chart) chart.destroy();
+        chart = new Chart(document.getElementById("chart"), {
+            type: "bar",
+            data: { labels: data.labels,
+                datasets: [{ label: "Value", data: data.values,
+                    backgroundColor: "#4facfe" }] },
+            options: { scales: { y: { beginAtZero: true } } }
+        });
+    }
+
+    function drawHist(h) {
+        if (histChart) histChart.destroy();
+        histChart = new Chart(document.getElementById("hist"), {
+            type: "bar",
+            data: { labels: h.labels,
+                datasets: [{ label: "Count", data: h.counts,
+                    backgroundColor: "#7c8cf8",
+                    barPercentage: 1.0, categoryPercentage: 1.0 }] },
+            options: { scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
+        });
+    }
+
+    function drawBox(b) {
+        const svg = document.getElementById("box");
+        const info = document.getElementById("boxInfo");
+        if (!b.count) { svg.innerHTML = ""; info.textContent = "No data yet."; return; }
+
+        const W = 700, pad = 40, y = 40, h = 40, mid = y + h / 2;
+        const lo = Math.min(b.min, b.whiskerLow);
+        const hi = Math.max(b.max, b.whiskerHigh);
+        const span = (hi - lo) || 1;
+        const X = v => pad + (v - lo) / span * (W - 2 * pad);
+
+        let s = "";
+        s += `<line x1="${X(b.whiskerLow)}" y1="${mid}" x2="${X(b.q1)}" y2="${mid}" stroke="#555"/>`;
+        s += `<line x1="${X(b.q3)}" y1="${mid}" x2="${X(b.whiskerHigh)}" y2="${mid}" stroke="#555"/>`;
+        s += `<line x1="${X(b.whiskerLow)}" y1="${y + 8}" x2="${X(b.whiskerLow)}" y2="${y + h - 8}" stroke="#555"/>`;
+        s += `<line x1="${X(b.whiskerHigh)}" y1="${y + 8}" x2="${X(b.whiskerHigh)}" y2="${y + h - 8}" stroke="#555"/>`;
+        s += `<rect x="${X(b.q1)}" y="${y}" width="${Math.max(X(b.q3) - X(b.q1), 1)}" height="${h}" fill="#bfe0ff" stroke="#4facfe"/>`;
+        s += `<line x1="${X(b.median)}" y1="${y}" x2="${X(b.median)}" y2="${y + h}" stroke="#e35d5d" stroke-width="3"/>`;
+        b.outliers.forEach(o => {
+            s += `<circle cx="${X(o)}" cy="${mid}" r="4" fill="none" stroke="#e35d5d" stroke-width="2"/>`;
+        });
+        s += `<text x="${pad}" y="115" font-size="12" fill="#666">${fmt(lo)}</text>`;
+        s += `<text x="${W - pad}" y="115" font-size="12" fill="#666" text-anchor="end">${fmt(hi)}</text>`;
+        svg.innerHTML = s;
+
+        info.textContent = `Q1 ${fmt(b.q1)} | median ${fmt(b.median)} | Q3 ${fmt(b.q3)} | whiskers ${fmt(b.whiskerLow)} to ${fmt(b.whiskerHigh)} | outliers: `
+            + (b.outliers.length ? b.outliers.map(fmt).join(", ") : "none");
+    }
+
+    function drawScatter(sc) {
+        if (scatterChart) scatterChart.destroy();
+        const info = document.getElementById("scatterInfo");
+        if (!sc.pairs) {
+            scatterChart = null;
+            info.textContent = "Add rows with a second value (or upload a 3-column CSV) to see this plot.";
+            return;
+        }
+        const datasets = [{ label: "Data", data: sc.points, backgroundColor: "#4facfe" }];
+        if (sc.slope !== null) {
+            const xs = sc.points.map(p => p.x);
+            const x1 = Math.min(...xs), x2 = Math.max(...xs);
+            datasets.push({
+                type: "line", label: "Least-squares fit",
+                data: [{ x: x1, y: sc.intercept + sc.slope * x1 },
+                    { x: x2, y: sc.intercept + sc.slope * x2 }],
+                borderColor: "#e35d5d", pointRadius: 0, borderWidth: 2
+            });
+        }
+        scatterChart = new Chart(document.getElementById("scatter"), {
+            type: "scatter",
+            data: { datasets },
+            options: { scales: { x: { title: { display: true, text: "Value" } },
+                    y: { title: { display: true, text: "Second value" } } } }
+        });
+        info.textContent = `n = ${sc.pairs}`
+            + (sc.r !== null
+                ? `, r = ${fmt(sc.r)}, R² = ${fmt(sc.rSquared)}, slope = ${fmt(sc.slope)}, intercept = ${fmt(sc.intercept)}`
+                : "");
+    }
+
+    function showStats(s, a) {
+        const rows = [["Count", s.count], ["Mean", s.mean], ["Median", s.median],
+            ["Std deviation (sample)", s.stdDev], ["Min", s.min],
+            ["Q1 (25%)", s.q1], ["Q3 (75%)", s.q3], ["Max", s.max],
+            ["Skewness", a.skewness], ["Excess kurtosis", a.kurtosis],
+            ["95% CI for mean (low)", a.ciLow], ["95% CI for mean (high)", a.ciHigh]];
+        document.getElementById("stats").innerHTML =
+            rows.map(r => `<tr><td>${r[0]}</td><td>${fmt(r[1])}</td></tr>`).join("");
+    }
+
+    async function addSale() {
+        const label = document.getElementById("label").value.trim();
+        const amount = parseFloat(document.getElementById("amount").value);
+        const raw2 = document.getElementById("amount2").value;
+        const amount2 = raw2 === "" ? null : parseFloat(raw2);
+        if (!label || Number.isNaN(amount)) {
+            alert("Enter a label and a number.");
+            return;
+        }
+        await fetch("/api/sales", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ label, amount, amount2 })
+        });
+        document.getElementById("label").value = "";
+        document.getElementById("amount").value = "";
+        document.getElementById("amount2").value = "";
+        refresh();
+    }
+
+    async function uploadCSV() {
+        const fileInput = document.getElementById("csvFile");
+        const status = document.getElementById("uploadStatus");
+        const file = fileInput.files[0];
+
+        if (!file) { status.textContent = "Please select a CSV file first."; return; }
+        if (!file.name.toLowerCase().endsWith(".csv")) {
+            status.textContent = "Please select a CSV file.";
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append("file", file);
+        status.textContent = "Uploading...";
+
+        try {
+            const response = await fetch("/api/upload", { method: "POST", body: formData });
+            const result = await response.json().catch(() => ({}));
+            if (!response.ok) {
+                throw new Error(result.message || "Upload failed (" + response.status + ").");
+            }
+            status.textContent = "Imported " + result.imported + " rows.";
+            fileInput.value = "";
+            document.getElementById("fileName").textContent = "";
+            refresh();
+        } catch (error) {
+            status.textContent = "Error: " + error.message;
+        }
+    }
+
+    async function clearAll() {
+        await fetch("/api/sales", { method: "DELETE" });
+        refresh();
+    }
+
+    function downloadStats() {
+        const rows = [...document.querySelectorAll("#stats tr")]
+            .map(tr => [...tr.children].map(td => td.textContent).join(","));
+        const blob = new Blob(["statistic,value\n" + rows.join("\n")], { type: "text/csv" });
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = "statistics.csv";
+        a.click();
+        URL.revokeObjectURL(a.href);
+    }
+
+    document.getElementById("csvFile").addEventListener("change", function () {
+        const file = this.files[0];
+        document.getElementById("fileName").textContent =
+            file ? "Selected: " + file.name : "";
+    });
+
+    refresh();
+</script>
+</body>
+</html>

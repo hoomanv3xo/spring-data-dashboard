@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Hello Spring</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #4facfe, #00f2fe);
+            min-height: 100vh;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .card {
+            background: white;
+            padding: 30px 40px;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            text-align: center;
+        }
+        input, button {
+            padding: 10px 14px;
+            font-size: 16px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+        }
+        button {
+            background: #4facfe;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover { background: #2f8fe0; }
+        #result { margin-top: 20px; font-size: 24px; color: #333; }
+    </style>
+</head>
+<body>
+<div class="card">
+    <h1>Hello Spring Boot</h1>
+    <input id="name" type="text" placeholder="Enter your name">
+    <button onclick="greet()">Greet me</button>
+    <div id="result"></div>
+</div>
+
+<script>
+    async function greet() {
+        const name = document.getElementById("name").value || "World";
+        const response = await fetch("/hello/" + encodeURIComponent(name));
+        document.getElementById("result").textContent = await response.text();
+    }
+</script>
+</body>
+</html>
