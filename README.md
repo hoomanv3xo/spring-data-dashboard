@@ -10,7 +10,7 @@ A full-stack web app for entering or uploading numeric data and exploring it wit
 - Export data or statistics as CSV
 
 ## Tech stack
-Java 21, Spring Boot, Spring Data JPA, MySQL, Chart.js, HTML/JavaScript
+Java 21, Spring Boot, Spring Data JPA, MySQL, Chart.js, HTML/JavaScript, RESTful JSON endpoints
 
 ## Screenshots
 ![Dashboard](docs/dashboard.png)
