@@ -49,16 +49,16 @@ A,2,55
 B,3,60
 C,4,65
 ```
-
-## Ideas for next steps
-- User accounts and per-user datasets
-- More chart types and statistical tests
-- Docker Compose setup with MySQL
 ## Results
  | Rows | Upload + save | Load + draw charts | Total |
 |---|---|---|---|
 | 1,000 | 0.60 s | 0.09 s | 0.69 s |
 | 10,000 | 3.86 s | 0.42 s | 4.27 s |
 | 50,000 | 29.69 s | 1.83 s | 31.52 s |
-
 - Measured locally with MySQL 8.0 on the same machine, using synthetic normally distributed data.
+  
+## Ideas for next steps
+- User accounts and per-user datasets
+- More chart types and statistical tests
+- Docker Compose setup with MySQL
+
