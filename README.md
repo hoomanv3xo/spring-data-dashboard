@@ -1,6 +1,6 @@
 # Data Dashboard (Spring Boot + MySQL)
 
-A full-stack web app for entering or uploading numeric data and exploring it with descriptive statistics and charts.
+ Built a Spring Boot + MySQL dashboard that turns a CSV into statistics and charts, measured 50,000 rows end to end in 31.5 s, and found database inserts were 94% of it.
 
 ## Features
 - Add data points manually or upload a CSV (`label,amount[,amount2]`)
@@ -8,7 +8,7 @@ A full-stack web app for entering or uploading numeric data and exploring it wit
 - Charts: bar chart, histogram (adjustable bins), box plot with outliers, scatter plot with least-squares line and Pearson correlation
 - Data stored in MySQL through Spring Data JPA
 - Export data or statistics as CSV
-
+- 
 ## Tech stack
 Java 21, Spring Boot, Spring Data JPA, MySQL, Chart.js, HTML/JavaScript, RESTful JSON endpoints
 
@@ -54,3 +54,11 @@ C,4,65
 - User accounts and per-user datasets
 - More chart types and statistical tests
 - Docker Compose setup with MySQL
+## Results
+ | Rows | Upload + save | Load + draw charts | Total |
+|---|---|---|---|
+| 1,000 | 0.60 s | 0.09 s | 0.69 s |
+| 10,000 | 3.86 s | 0.42 s | 4.27 s |
+| 50,000 | 29.69 s | 1.83 s | 31.52 s |
+
+- Measured locally with MySQL 8.0 on the same machine, using synthetic normally distributed data.
