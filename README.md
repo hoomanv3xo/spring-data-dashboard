@@ -1,64 +1,55 @@
-# Data Dashboard (Spring Boot + MySQL)
+# CSV Analytics Dashboard (Spring Boot + MySQL)
 
- Built a Spring Boot + MySQL dashboard that turns a CSV into statistics and charts, measured 50,000 rows end to end in 31.5 s, and found database inserts were 94% of it.
+Upload a CSV and get descriptive statistics and charts back, with a built-in
+timing panel that shows where the time goes.
+
+![Dashboard screenshot](docs/dashboard.png)
+![Timing panel screenshot](docs/timing-panel.png)
+
+## Key finding
+Uploading a 50,000-row CSV took 31.52 s end to end. About 29.5 s of that
+(roughly 94%) was the MySQL save, so database writes are the bottleneck.
+Batch inserts are the fix. [Add the before/after numbers once you've
+implemented it.]
 
 ## Features
-- Add data points manually or upload a CSV (`label,amount[,amount2]`)
-- Descriptive statistics: count, mean, median, sample standard deviation, min, max, quartiles, skewness, excess kurtosis, 95% confidence interval for the mean
-- Charts: bar chart, histogram (adjustable bins), box plot with outliers, scatter plot with least-squares line and Pearson correlation
-- Data stored in MySQL through Spring Data JPA
-- Export data or statistics as CSV
-- 
-## Tech stack
-Java 21, Spring Boot, Spring Data JPA, MySQL, Chart.js, HTML/JavaScript, RESTful JSON endpoints
+- CSV upload and storage in MySQL via Spring Data JPA
+- Histogram endpoint and Chart.js charts
+- Timing panel measuring upload-to-chart time
+- [Only list features that are working today]
 
-## Screenshots
-![Dashboard](docs/dashboard.png)
+## Tech stack
+Java 21, Spring Boot (Spring Web, Spring Data JPA), Maven, MySQL, Chart.js
+
+## Performance results
+Measured locally on [your machine specs]:
+
+| Rows   | Total time (s) | Notes                    |
+|--------|----------------|--------------------------|
+| 1,000  | 0.69           |                          |
+| 10,000 | 4.27           |                          |
+| 50,000 | 31.52          | MySQL save: about 29.5 s |
+
+## How it works
+1. CSV is uploaded through the dashboard
+2. Rows are saved to MySQL through JPA
+3. Statistics are computed and sent to Chart.js
+4. The timing panel records each stage
 
 ## Run locally
-1. Create the database:
-```sql
-   CREATE DATABASE demo_db;
-   CREATE USER 'demo_user'@'localhost' IDENTIFIED BY 'your_password';
-   GRANT ALL PRIVILEGES ON demo_db.* TO 'demo_user'@'localhost';
-```
-2. Set the password as an environment variable:
-    - PowerShell: `$env:DB_PASSWORD="your_password"`
-    - macOS/Linux: `export DB_PASSWORD=your_password`
-3. Start the app: `./mvnw spring-boot:run` (Windows: `mvnw.cmd spring-boot:run`), or run `DemoApplication` from your IDE.
-4. Open http://localhost:8080/dashboard.html
+1. Install JDK 21, Maven, and MySQL
+2. Create a database: `CREATE DATABASE [your_db_name];`
+3. Copy `application.properties.example` to `application.properties` and
+   set your own MySQL URL, username, and password
+4. `mvn spring-boot:run`
+5. Open `http://localhost:8080/chart.html`
 
-## API
-| Method | Endpoint | Description |
-|---|---|---|
-| GET | `/api/sales` | Labels and values for the bar chart |
-| POST | `/api/sales` | Add a data point (`label`, `amount`, optional `amount2`) |
-| DELETE | `/api/sales` | Delete all data |
-| POST | `/api/upload` | Upload a CSV file |
-| GET | `/api/stats` | Descriptive statistics |
-| GET | `/api/analysis` | Skewness, kurtosis, 95% CI for the mean |
-| GET | `/api/histogram?bins=N` | Histogram bins and counts |
-| GET | `/api/boxplot` | Five-number summary and outliers |
-| GET | `/api/scatter` | Points, correlation, and regression line |
-| GET | `/api/export` | Download the data as CSV |
+## Limitations
+- Timings come from one local machine, not a controlled benchmark
+- [Anything else you know is rough or unfinished]
 
-## Sample data
-```
-label,amount,amount2
-A,2,55
-B,3,60
-C,4,65
-```
-## Results
- | Rows | Upload + save | Load + draw charts | Total |
-|---|---|---|---|
-| 1,000 | 0.60 s | 0.09 s | 0.69 s |
-| 10,000 | 3.86 s | 0.42 s | 4.27 s |
-| 50,000 | 29.69 s | 1.83 s | 31.52 s |
-- Measured locally with MySQL 8.0 on the same machine, using synthetic normally distributed data.
-  
-## Ideas for next steps
-- User accounts and per-user datasets
-- More chart types and statistical tests
-- Docker Compose setup with MySQL
-
+## Roadmap
+- [ ] Batch inserts (the proposed fix for the 94% bottleneck)
+- [ ] Box plot and scatter plot
+- [ ] More statistics: skewness, confidence interval, correlation
+- [ ] CSV export
