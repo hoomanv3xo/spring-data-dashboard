@@ -9,14 +9,12 @@ timing panel that shows where the time goes.
 ## Key finding
 Uploading a 50,000-row CSV took 31.52 s end to end. About 29.5 s of that
 (roughly 94%) was the MySQL save, so database writes are the bottleneck.
-Batch inserts are the fix. [Add the before/after numbers once you've
-implemented it.]
+Batch inserts are the fix.
 
 ## Features
 - CSV upload and storage in MySQL via Spring Data JPA
 - Histogram endpoint and Chart.js charts
 - Timing panel measuring upload-to-chart time
-- [Only list features that are working today]
 
 ## Tech stack
 Java 21, Spring Boot (Spring Web, Spring Data JPA), Maven, MySQL, Chart.js
@@ -46,7 +44,6 @@ Measured locally on [your machine specs]:
 
 ## Limitations
 - Timings come from one local machine, not a controlled benchmark
-- [Anything else you know is rough or unfinished]
 
 ## Roadmap
 - [ ] Batch inserts (the proposed fix for the 94% bottleneck)
