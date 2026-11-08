@@ -20,7 +20,7 @@ Batch inserts are the fix.
 Java 21, Spring Boot (Spring Web, Spring Data JPA), Maven, MySQL, Chart.js
 
 ## Performance results
-Measured locally on [your machine specs]:
+Measured locally on an Intel Core i5, 16 GB RAM, with MySQL running on a 512 GB SSD.
 
 | Rows   | Total time (s) | Notes                    |
 |--------|----------------|--------------------------|
