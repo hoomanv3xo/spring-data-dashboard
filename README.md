@@ -4,7 +4,7 @@ Upload a CSV and get descriptive statistics and charts back, with a built-in
 timing panel that shows where the time goes.
 
 ![Dashboard screenshot](docs/dashboard.png)
-![Timing panel screenshot](docs/timing-panel.png)
+
 
 ## Key finding
 Uploading a 50,000-row CSV took 31.52 s end to end. About 29.5 s of that
