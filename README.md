@@ -1,12 +1,11 @@
 # CSV Analytics Dashboard (Spring Boot + MySQL)
-Uploading a 50,000-row CSV takes about 3.1 s end to end (average of 3 runs). The app saves rows with batched JDBC inserts (batch size 1,000, `rewriteBatchedStatements=true`), and the built-in timing panel shows where the time goes.
+Uploading a 50,000-row CSV took 31.52 s end to end, and about 29.5 s of that (94%) was the MySQL save. Switching to batched JDBC inserts cut the total to 3.14 s, about 10x faster.
 ![Dashboard screenshot](docs/dashboard.png)
 
 
 ## Key finding
 Uploading a 50,000-row CSV took 31.52 s end to end. About 29.5 s of that
-(roughly 94%) was the MySQL save, so database writes are the bottleneck.
-Batch inserts are the fix.
+(roughly 94%) was the MySQL save, so database writes are the bottleneck. Batch inserts are the fix.
 
 ## Features
 - CSV upload and storage in MySQL via Spring Data JPA
