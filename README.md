@@ -1,5 +1,5 @@
 # CSV Analytics Dashboard (Spring Boot + MySQL)
-Uploading a 50,000-row CSV took 31.52 s end to end, and about 29.5 s of that (94%) was the MySQL save. Switching to batched JDBC inserts cut the total to 3.14 s, about 10x faster.
+A 50,000-row CSV uploads and charts in about 3.1 s (average of 3 runs), using batched JDBC inserts (batch size 1,000, `rewriteBatchedStatements=true`).
 ![Dashboard screenshot](docs/dashboard.png)
 
 
