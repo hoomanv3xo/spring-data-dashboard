@@ -14,16 +14,18 @@ Upload a CSV and get descriptive statistics and charts back. The app saves rows 
 ## Tech stack
 Java 21, Spring Boot (Spring Web, Spring Data JPA), Maven, MySQL, Chart.js
 
-## Performance results
+## Performance
 
-Measured locally on an Intel Core i5, 16 GB RAM, with MySQL running on a 512 GB SSD. Each time is the average of 3 runs.
+Measured locally on an Intel Core i5, 16 GB RAM, with MySQL running on a 512 GB SSD.
+Each time is the average of 3 runs (upload through chart render, in seconds).
 
-| Rows   | Upload + save (s) | Load + draw charts (s) | Total (s) |
-|--------|-------------------|------------------------|-----------|
-| 1,000  | 0.12              | 0.09                   | 0.21      |
-| 10,000 | 0.41              | 0.29                   | 0.70      |
-| 50,000 | 1.98              | 1.16                   | 3.14      |
+| Rows   | Total time (s) |
+|--------|----------------|
+| 1,000  | 0.21           |
+| 10,000 | 0.70           |
+| 50,000 | 3.14           |
 
+Uploads use batched JDBC inserts (batch size 1,000, `rewriteBatchedStatements=true`).
 ## How it works
 1. CSV is uploaded through the dashboard
 2. Rows are saved to MySQL through JPA
